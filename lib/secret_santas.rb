@@ -25,7 +25,7 @@
 # - Can I swap these and still be legal?
 # - With enough swaps like this (maybe a randomized # of swaps) you ought to end up with a random solution
 
-class Participants
+class Matcher
   attr_accessor :participants
 
   def initialize(people)
@@ -37,7 +37,7 @@ class Participants
     sequence = []
     loop do
       next_sequence = grouped_families.get_next_sequence
-      break unless next_sequence
+      break unless next_sequence.count > 0
       sequence += next_sequence
     end
     sequence
@@ -49,23 +49,25 @@ class Participants
 end
 
 class GroupedFamilies
-  attr_accessor :groups, :ordered_groups
+  attr_accessor :groups, :ordered_groups, :remainder
   def initialize(groups)
     @groups = groups
+    @remainder = []
   end
 
   def get_next_sequence
-    return if groups.keys.count.zero?
-    family1 = largest_family
-    puts "FAMILY 1 ------------"
-    pp family1
+    puts "@remainder: #{@remainder}"
+    return @remainder if groups.keys.count.zero?
+    family1 = @remainder + largest_family
+    @remainder = []
+    puts "familiy1: #{family1}"
     return family1 if groups.keys.count.zero?
     family2 = largest_family
-    puts "FAMILY 2 ------------"
-    pp family2
-    remainder = family1[family2.count..family1.count-1]
+    puts "familiy2: #{family2}"
+    @remainder = family1[family2.count..family1.count-1]
+    puts "@remainder: #{@remainder}"
     family1 = family1[0..family2.count-1]
-    add_to_families(remainder) if remainder.count > 0
+    puts "family1: #{family1}"
     family1.zip(family2).flatten
   end
 
@@ -132,6 +134,6 @@ break_it = [
     ["Otto", "Katz", "<hello@example.com>"]
 ]
 
-#current = Participants.new(large_family_fixture).get_santa_cycle
-current = Participants.new(break_it).get_santa_cycle
+current = Matcher.new(large_family_fixture).get_santa_cycle
+#current = Matcher.new(break_it).get_santa_cycle
 pp current.map { |p| "#{p.first} #{p.family}" }
