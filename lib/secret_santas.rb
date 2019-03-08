@@ -28,45 +28,57 @@
 class Participants
   attr_accessor :participants
 
-  def initialize
-    @participants = [
-        ["Luke", "Skywalker", "<luke@theforce.net>"],
-        ["Leia", "Skywalker", "<leia@therebellion.org>"],
-        ["Toula", "Portokalos", "<toula@manhunter.org>"],
-        ["Gus", "Portokalos", "<gus@weareallfruit.net>"],
-        ["Bruce", "Wayne", "<bruce@imbatman.com>"],
-        ["Virgil", "Brigman", "<virgil@rigworkersunion.org>"],
-        ["Lindsey", "Brigman", "<lindsey@iseealiens.net>"],
-    ].map { |p_array| Participant.new(p_array) }
+  def initialize(people)
+    @participants = people.map { |p_array| Participant.new(p_array) }
   end
 
-  def available_santas
-
-  end
-
-  def available_santees
-
-  end
-
-  def create_initial_order
+  def get_santa_cycle
+    grouped_families = GroupedFamilies.new(group_by_families)
+    sequence = []
+    loop do
+      next_sequence = grouped_families.get_next_sequence
+      break unless next_sequence
+      sequence += next_sequence
+    end
+    sequence
   end
 
   def group_by_families
-    hash = @participants.group_by { |p| p.family }
-    all_families = hash.keys.sort_by { |k| hash[k].count }.reverse
-    cycle = []
-    loop do
-      remaining_families = []
-      all_families.each do |family|
-        cycle << hash[family].pop
-        if hash[family].length > 0
-          remaining_families << family
-        end
-      end
-      all_families = remaining_families
-      break if all_families.size == 0
-    end
-    cycle
+    @participants.group_by { |p| p.family }
+  end
+end
+
+class GroupedFamilies
+  attr_accessor :groups, :ordered_groups
+  def initialize(groups)
+    @groups = groups
+  end
+
+  def get_next_sequence
+    return if groups.keys.count.zero?
+    family1 = largest_family
+    puts "FAMILY 1 ------------"
+    pp family1
+    return family1 if groups.keys.count.zero?
+    family2 = largest_family
+    puts "FAMILY 2 ------------"
+    pp family2
+    remainder = family1[family2.count..family1.count-1]
+    family1 = family1[0..family2.count-1]
+    add_to_families(remainder) if remainder.count > 0
+    family1.zip(family2).flatten
+  end
+
+  def largest_family
+    ordered_groups = groups.keys.sort_by { |k| groups[k].count }
+    family_name = ordered_groups.pop
+    groups.delete(family_name)
+  end
+
+  # this only works if everyone you pass in is in the same family
+  # and there is no such family in the hash
+  def add_to_families(people)
+    groups[people.first.family] = people
   end
 end
 
@@ -85,5 +97,41 @@ class Participant
 
 end
 
-current = Participants.new.group_by_families
+medium_fixture = [
+    ["Luke", "Skywalker", "<luke@theforce.net>"],
+    ["Leia", "Skywalker", "<leia@therebellion.org>"],
+    ["Toula", "Portokalos", "<toula@manhunter.org>"],
+    ["Gus", "Portokalos", "<gus@weareallfruit.net>"],
+    ["Bruce", "Wayne", "<bruce@imbatman.com>"],
+    ["Virgil", "Brigman", "<virgil@rigworkersunion.org>"],
+    ["Lindsey", "Brigman", "<lindsey@iseealiens.net>"],
+]
+
+large_family_fixture = [
+    ["Luke", "Skywalker", "<luke@theforce.net>"],
+    ["Leia", "Skywalker", "<leia@therebellion.org>"],
+    ["Toula", "Skywalker", "<toula@manhunter.org>"],
+    ["Gus", "Skywalker", "<gus@weareallfruit.net>"],
+    ["Bruce", "Wayne", "<bruce@imbatman.com>"],
+    ["Virgil", "Portokalos", "<virgil@rigworkersunion.org>"],
+    ["Lindsey", "Brigman", "<lindsey@iseealiens.net>"],
+    ["Demian", "Katz", "<hello@example.com>"]
+]
+
+break_it = [
+    ["Luke", "Skywalker", "<luke@theforce.net>"],
+    ["Leia", "Skywalker", "<leia@therebellion.org>"],
+    ["Toula", "Skywalker", "<toula@manhunter.org>"],
+    ["Gus", "Skywalker", "<gus@weareallfruit.net>"],
+    ["Bruce", "Wayne", "<bruce@imbatman.com>"],
+    ["Virgil", "Wayne", "<virgil@rigworkersunion.org>"],
+    ["Aeneas", "Wayne", "<virgil@rigworkersunion.org>"],
+    ["Lindsey", "Brigman", "<lindsey@iseealiens.net>"],
+    ["Lohan", "Brigman", "<lindsey@iseealiens.net>"],
+    ["Demian", "Katz", "<hello@example.com>"],
+    ["Otto", "Katz", "<hello@example.com>"]
+]
+
+#current = Participants.new(large_family_fixture).get_santa_cycle
+current = Participants.new(break_it).get_santa_cycle
 pp current.map { |p| "#{p.first} #{p.family}" }
