@@ -36,10 +36,11 @@ class Matcher
     grouped_families = GroupedFamilies.new(group_by_families)
     sequence = []
     loop do
-      next_sequence = grouped_families.get_next_sequence
-      break unless next_sequence.count > 0
-      sequence += next_sequence
+      next_person = grouped_families.get_next_person
+      break unless next_person
+      sequence << next_person
     end
+    raise(ArgumentError, "No solution for these people") if @participants.count > sequence.count
     sequence
   end
 
@@ -49,32 +50,43 @@ class Matcher
 end
 
 class GroupedFamilies
-  attr_accessor :groups, :ordered_groups, :remainder
+  attr_accessor :groups, :ordered_groups, :remainder, :first_family, :last_selected_family
+
   def initialize(groups)
     @groups = groups
     @remainder = []
   end
 
-  def get_next_sequence
-    puts "@remainder: #{@remainder}"
-    return @remainder if groups.keys.count.zero?
-    family1 = @remainder + largest_family
-    @remainder = []
-    puts "familiy1: #{family1}"
-    return family1 if groups.keys.count.zero?
-    family2 = largest_family
-    puts "familiy2: #{family2}"
-    @remainder = family1[family2.count..family1.count-1]
-    puts "@remainder: #{@remainder}"
-    family1 = family1[0..family2.count-1]
-    puts "family1: #{family1}"
-    family1.zip(family2).flatten
+  # return nil when done
+  def get_next_person
+    setup unless (@first_family && @last_selected_family)
+    if (@last_selected_family != @first_family) && (@groups[@first_family].size > 0)
+      next_person = @groups[@first_family].pop
+    else
+      if largest_family != @last_selected_family
+        next_person = @groups[largest_family].pop
+      else
+        next_person = @groups[second_largest_family].pop
+      end
+    end
+    return nil unless next_person
+    @last_selected_family = next_person.family
+    return next_person
   end
 
+  def setup
+    @first_family = largest_family
+    @last_selected_family = ''
+  end
+
+  # sorts families, returns current largest
   def largest_family
-    ordered_groups = groups.keys.sort_by { |k| groups[k].count }
-    family_name = ordered_groups.pop
-    groups.delete(family_name)
+    @ordered_groups = groups.keys.sort_by { |k| groups[k].count }.reverse
+    @ordered_groups.first
+  end
+
+  def second_largest_family
+    @ordered_groups[1]
   end
 
   # this only works if everyone you pass in is in the same family
@@ -134,6 +146,13 @@ break_it = [
     ["Otto", "Katz", "<hello@example.com>"]
 ]
 
-current = Matcher.new(large_family_fixture).get_santa_cycle
-#current = Matcher.new(break_it).get_santa_cycle
+unsolvable = [
+    ["Luke", "Skywalker", "<luke@theforce.net>"],
+    ["Leia", "Skywalker", "<leia@therebellion.org>"],
+    ["Toula", "Skywalker", "<toula@manhunter.org>"],
+    ["Gus", "Skywalker", "<gus@weareallfruit.net>"],
+    ["Bruce", "Wayne", "<bruce@imbatman.com>"],
+]
+
+current = Matcher.new(break_it).get_santa_cycle
 pp current.map { |p| "#{p.first} #{p.family}" }
