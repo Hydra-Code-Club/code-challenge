@@ -29,25 +29,19 @@ def weird?(n)
     #remove n from list of divisors
     factors.delete(n)
     return false if factors.sum <= n
-    return false if sum_to_n(factors, n) 
+    return false if sum_to_n?(factors.sort.reverse, n)
     true
 end
 
-def sum_to_n(factors, n)
-    if factors.count == 0
-        return false
-    end
-    if factors.count == 1
-        return factors[0] == n
-    end
+def sum_to_n?(factors, n)
     factors.each do |x|
         if x == n
             return true
         end
         if x < n
-            remaining_factors = factors
+            remaining_factors = factors.clone
             remaining_factors.delete x
-            if sum_to_n(remaining_factors, n - x)
+            if sum_to_n?(remaining_factors, n - x)
                 return true
             end
         end
@@ -55,7 +49,7 @@ def sum_to_n(factors, n)
     false
 end
 
-n = 25
+n = ARGV[0].to_i
 (1..n).each do |x|
     if weird?(x)
         puts "#{x} is weird"
